@@ -1,0 +1,34 @@
+import random
+import sys
+import os
+
+from html.parser import HTMLParser
+
+class MyHTMLParser(HTMLParser):
+    def handle_starttag(self, tag, attrs):
+        None
+
+    def handle_endtag(self, tag):
+        None
+
+    def handle_data(self, data):
+        print(data)
+
+
+folder_path = 'C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment 1\\corpus\\corpus\\corpus'
+
+def readallfiles(dir):
+    file_names = os.listdir(dir)
+    count = 0
+    parser = MyHTMLParser()
+    for filename in file_names:
+        fil = open(folder_path + '\\' + filename)
+        parser.feed(fil.read())
+        count = count + 1
+        if count == 1:
+            break
+
+
+readallfiles(folder_path)
+
+
