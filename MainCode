@@ -1,34 +1,55 @@
 import random
+import string
 import sys
 import os
+import requests
+import re
+from nltk.stem import PorterStemmer
+from bs4 import BeautifulSoup
+from bs4.element import Comment
 
-from html.parser import HTMLParser
+folder_path = 'C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment ' \
+              '1\\corpus\\corpus\\corpus\\clueweb12-0000tw-13-04988'
+folder_path1 = 'C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment ' \
+              '1\\stoplist.txt'
 
-class MyHTMLParser(HTMLParser):
-    def handle_starttag(self, tag, attrs):
-        None
+# This function checks for the required tags in the html string
+def req_tags(element):
+    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
+        return False
+    if isinstance(element, Comment):
+        return False
+    return True
 
-    def handle_endtag(self, tag):
-        None
+# This function uses the previous function to extract only the required text from the html string
+def my_html_parser(html_string):
+    new_soup = BeautifulSoup(html_string, 'html.parser')
+    texts = new_soup.findAll(text=True)
+    tags_text = filter(req_tags, texts)
+    return u" ".join(y.strip() for y in tags_text)
 
-    def handle_data(self, data):
-        print(data)
+# Tokenizing the text on spaces
+stoplist = open(folder_path1).read()
+stoplist = stoplist.splitlines()
+html = open(folder_path).read()
+substr = "<!DOCTYPE"
+index = html.find(substr)
+htmlcode = html[index:]
+finaltext = my_html_parser(htmlcode).lower().split()
 
+print(stoplist)
+print(finaltext)
 
-folder_path = 'C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment 1\\corpus\\corpus\\corpus'
-
-def readallfiles(dir):
-    file_names = os.listdir(dir)
-    count = 0
-    parser = MyHTMLParser()
-    for filename in file_names:
-        fil = open(folder_path + '\\' + filename)
-        parser.feed(fil.read())
-        count = count + 1
-        if count == 1:
-            break
-
-
-readallfiles(folder_path)
-
-
+result = [x for x in finaltext if x not in stoplist]
+print(result)
+# result = [i.translate(string.punctuation) for i in result]
+# print(result)
+required_punc = string.punctuation + "—"
+required_punc = required_punc.replace('\'', '')
+print(required_punc)
+result = [i.translate(str.maketrans('','',required_punc)) for i in result]
+result = [i for i in result if i]
+print(result)
+ps = PorterStemmer()
+result = [ps.stem(i) for i in result]
+print(result)
