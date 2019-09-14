@@ -4,12 +4,13 @@ import sys
 import os
 import requests
 import re
+import fnv
 from nltk.stem import PorterStemmer
 from bs4 import BeautifulSoup
 from bs4.element import Comment
 
 folder_path = 'C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment ' \
-              '1\\corpus\\corpus\\corpus\\clueweb12-0000tw-13-04988'
+              '1\\corpus\\corpus\\corpus'
 folder_path1 = 'C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment ' \
               '1\\stoplist.txt'
 
@@ -28,28 +29,37 @@ def my_html_parser(html_string):
     tags_text = filter(req_tags, texts)
     return u" ".join(y.strip() for y in tags_text)
 
+
 # Tokenizing the text on spaces
+file_names = os.listdir(folder_path)
 stoplist = open(folder_path1).read()
 stoplist = stoplist.splitlines()
-html = open(folder_path).read()
-substr = "<!DOCTYPE"
-index = html.find(substr)
-htmlcode = html[index:]
-finaltext = my_html_parser(htmlcode).lower().split()
-
-print(stoplist)
-print(finaltext)
-
-result = [x for x in finaltext if x not in stoplist]
-print(result)
-# result = [i.translate(string.punctuation) for i in result]
-# print(result)
-required_punc = string.punctuation + "—"
+termid = open("C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment 1\\TERMID.txt", "a", errors='ignore')
+docid = open("C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment 1\\DOCID.txt", "a", errors='ignore')
+required_punc = string.punctuation + "—\""
 required_punc = required_punc.replace('\'', '')
-print(required_punc)
-result = [i.translate(str.maketrans('','',required_punc)) for i in result]
-result = [i for i in result if i]
-print(result)
+substr = "<!DOCTYPE"
+curr_term_id = 1
+curr_doc_id = 1
+allterms = []
 ps = PorterStemmer()
-result = [ps.stem(i) for i in result]
-print(result)
+
+for filename in file_names:
+    html = open(folder_path + "\\" + filename, errors='ignore').read()
+    index = html.find(substr)
+    htmlcode = html[index:]
+    finaltext = my_html_parser(htmlcode).lower().split()
+
+    result = [x for x in finaltext if x not in stoplist]
+    print(result)
+    result = [i.translate(str.maketrans('','',required_punc)) for i in result]
+    result = [i for i in result if i]
+    result = [ps.stem(i) for i in result]
+    print(result)
+    result = [x for x in result if x not in allterms]
+    for i in result:
+        termid.write(str(curr_term_id)+"\t" + i + "\n")
+        curr_term_id += 1
+    allterms = allterms + result
+    docid.write(str(curr_doc_id)+"\t" + filename + "\n")
+    curr_doc_id += 1
