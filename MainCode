@@ -5,6 +5,7 @@ import os
 import requests
 import re
 import fnv
+import hashlib
 from nltk.stem import PorterStemmer
 from bs4 import BeautifulSoup
 from bs4.element import Comment
@@ -29,6 +30,22 @@ def my_html_parser(html_string):
     tags_text = filter(req_tags, texts)
     return u" ".join(y.strip() for y in tags_text)
 
+def custom_count(my_list , param1):
+    counter = 0
+    for i in range(len(my_list)):
+        if my_list[i][0] == param1[0]:
+            counter += 1
+    return counter
+
+def custom_count1(my_list , param1, param2):
+    counter = 1
+    mytempid = param2
+    for i in range(len(my_list)):
+        if my_list[i][0] == param1:
+            if my_list[i][1] != mytempid:
+                counter += 1
+                mytempid = my_list[i][1]
+    return counter
 
 # Tokenizing the text on spaces
 file_names = os.listdir(folder_path)
@@ -36,12 +53,14 @@ stoplist = open(folder_path1).read()
 stoplist = stoplist.splitlines()
 termid = open("C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment 1\\TERMID.txt", "a", errors='ignore')
 docid = open("C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment 1\\DOCID.txt", "a", errors='ignore')
+term_index = open("C:\\Users\\Muham\\Desktop\\Semester 5\\Info Ret\\Assignment 1\\term_index.txt", "a", errors='ignore')
 required_punc = string.punctuation + "—\""
 required_punc = required_punc.replace('\'', '')
 substr = "<!DOCTYPE"
-curr_term_id = 1
 curr_doc_id = 1
-allterms = []
+allterms = {}
+tuplist = []
+
 ps = PorterStemmer()
 
 for filename in file_names:
@@ -56,10 +75,37 @@ for filename in file_names:
     result = [i for i in result if i]
     result = [ps.stem(i) for i in result]
     print(result)
-    result = [x for x in result if x not in allterms]
+    y = 0
     for i in result:
+        curr_term_id = int(hashlib.sha1(i.encode("utf-8")).hexdigest(), 16) % (10 ** 6)
+        print(curr_term_id)
         termid.write(str(curr_term_id)+"\t" + i + "\n")
-        curr_term_id += 1
-    allterms = allterms + result
+        allterms.update({curr_term_id: i})
+        tuplist.append([curr_term_id, curr_doc_id, y])
+        y += 1
     docid.write(str(curr_doc_id)+"\t" + filename + "\n")
     curr_doc_id += 1
+
+for x, y in allterms.items():
+    print(x, ":", y)
+tuplist.sort(key=lambda tup: [tup[0], tup[1]])
+for a, b, c in tuplist:
+    print(str(a) + ":" + str(b) + ":" + str(c))
+initialTID = tuplist[0][0]
+my_counter = 0
+myflag = 0
+term_index.write(str(initialTID)+" "+str(custom_count(tuplist, tuplist[0]))+" "+str(custom_count1(tuplist, tuplist[0][0], tuplist[0][1]))+" ")
+for i in range(len(tuplist)):
+    if tuplist[i][0] == initialTID:
+        if myflag:
+            term_index.write(str(tuplist[i][1] - tuplist[i-my_counter][1]) + "," + str(tuplist[i][2]) + " ")
+            my_counter += 1
+        else:
+            term_index.write(str(tuplist[i][1]) + "," + str(tuplist[i][2]) + " ")
+            my_counter += 1
+            myflag = 1
+    else:
+        term_index.write("\n"+str(tuplist[i][0])+" "+str(custom_count(tuplist, tuplist[i]))+" "+str(custom_count1(tuplist, tuplist[i][0], tuplist[i][1]))+" ")
+        initialTID = tuplist[i][0]
+        my_counter = 0
+        myflag = 0
