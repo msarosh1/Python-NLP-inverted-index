@@ -30,22 +30,35 @@ def my_html_parser(html_string):
     tags_text = filter(req_tags, texts)
     return u" ".join(y.strip() for y in tags_text)
 
-def custom_count(my_list , param1):
+def occurencecount(my_list): #termidcounter for term occurences
     counter = 0
+    mycountlist = []
+    mytempid = my_list[0]
     for i in range(len(my_list)):
-        if my_list[i][0] == param1[0]:
+        if my_list[i][0] != mytempid[0]:
+            mycountlist.append(counter)
+            counter = 1
+            mytempid = my_list[i]
+        else:
             counter += 1
-    return counter
+    mycountlist.append(counter)
+    return mycountlist
 
-def custom_count1(my_list , param1, param2):
+def docscount(my_list): #totaldocscounter for terms
     counter = 1
-    mytempid = param2
+    mytempid = my_list[0]
+    mycountlist = []
     for i in range(len(my_list)):
-        if my_list[i][0] == param1:
-            if my_list[i][1] != mytempid:
+        if my_list[i][0] == mytempid[0]:
+            if my_list[i][1] != mytempid[1]:
                 counter += 1
-                mytempid = my_list[i][1]
-    return counter
+                mytempid = my_list[i]
+        else:
+            mycountlist.append(counter)
+            mytempid = my_list[i]
+            counter = 1
+    mycountlist.append(counter)
+    return mycountlist
 
 # Tokenizing the text on spaces
 file_names = os.listdir(folder_path)
@@ -70,42 +83,48 @@ for filename in file_names:
     finaltext = my_html_parser(htmlcode).lower().split()
 
     result = [x for x in finaltext if x not in stoplist]
-    print(result)
     result = [i.translate(str.maketrans('','',required_punc)) for i in result]
     result = [i for i in result if i]
     result = [ps.stem(i) for i in result]
     print(result)
     y = 0
     for i in result:
-        curr_term_id = int(hashlib.sha1(i.encode("utf-8")).hexdigest(), 16) % (10 ** 6)
-        print(curr_term_id)
-        termid.write(str(curr_term_id)+"\t" + i + "\n")
+        curr_term_id = int(hashlib.sha1(i.encode("utf-8", errors='surrogatepass')).hexdigest(), 16) % (10 ** 6)
+        # termid.write(str(curr_term_id)+"\t" + i + "\n")
         allterms.update({curr_term_id: i})
         tuplist.append([curr_term_id, curr_doc_id, y])
         y += 1
     docid.write(str(curr_doc_id)+"\t" + filename + "\n")
     curr_doc_id += 1
 
+
 for x, y in allterms.items():
-    print(x, ":", y)
+    termid.write(str(x) + "\t" + str(y) + "\n")
+     # print(x, ":", y)
 tuplist.sort(key=lambda tup: [tup[0], tup[1]])
 for a, b, c in tuplist:
     print(str(a) + ":" + str(b) + ":" + str(c))
 initialTID = tuplist[0][0]
+docs_count = docscount(tuplist)
+tot_times_count = occurencecount(tuplist)
 my_counter = 0
 myflag = 0
-term_index.write(str(initialTID)+" "+str(custom_count(tuplist, tuplist[0]))+" "+str(custom_count1(tuplist, tuplist[0][0], tuplist[0][1]))+" ")
+term_index.write(str(initialTID)+" "+str(tot_times_count[0])+" "+str(docs_count[0])+" ")
+term_index.write(str(tuplist[0][1]) + "," + str(tuplist[0][2]) + " ")
+nthterm = 1
+tupleslen = len(tuplist)
 for i in range(len(tuplist)):
+    print(i)
     if tuplist[i][0] == initialTID:
         if myflag:
+            my_counter += 1
             term_index.write(str(tuplist[i][1] - tuplist[i-my_counter][1]) + "," + str(tuplist[i][2]) + " ")
-            my_counter += 1
         else:
-            term_index.write(str(tuplist[i][1]) + "," + str(tuplist[i][2]) + " ")
-            my_counter += 1
             myflag = 1
     else:
-        term_index.write("\n"+str(tuplist[i][0])+" "+str(custom_count(tuplist, tuplist[i]))+" "+str(custom_count1(tuplist, tuplist[i][0], tuplist[i][1]))+" ")
+        term_index.write("\n"+str(tuplist[i][0])+" "+str(tot_times_count[nthterm])+" "+str(docs_count[nthterm])+" ")
+        term_index.write(str(tuplist[i][1]) + "," + str(tuplist[i][2]) + " ")
         initialTID = tuplist[i][0]
         my_counter = 0
-        myflag = 0
+        myflag = 1
+        nthterm += 1
